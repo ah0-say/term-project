@@ -37,6 +37,7 @@ shares는 균등분할이어도 계산 결과를 저장한다. 저장 시 shares
 - events 문서를 status settling, settlementMode, pendingCount n으로 갱신한다. n은 만들 transfers 건수다.
 - transfers n건을 만든다. 이후 차수와 지출은 수정할 수 없다.
 - n이 0이면 송금이 필요 없으므로 바로 status settled, pendingCount 0으로 갱신한다.
+- open→settled 직행은 송금 0건일 때만 허용한다. 이 경우 transfers는 만들지 않고 pendingCount는 0이어야 한다. 송금이 1건 이상이면 반드시 settling을 거친다. 도메인 함수 canTransitionEvent는 open→settled를 거부하고, 이 직행은 startSettlement가 0건일 때만 결과로 돌려준다.
 
 송금 확인(받는 사람, runTransaction):
 - transfers 문서를 status confirmed, confirmedAt으로 갱신한다.
@@ -55,6 +56,7 @@ shares는 균등분할이어도 계산 결과를 저장한다. 저장 시 shares
 
 세부 규칙:
 - 가입: 초대 링크는 /join/{eid}?code=코드 형태다. 비멤버는 이벤트를 읽을 수 없으므로 eid를 링크로 전달한다. members 생성 시 role이 member가 아니면 거절해서 스스로 방장이 되는 것을 막는다.
+- 0건 정산 직행: 방장만 events를 open에서 settled로 바꿀 수 있고, 이때 pendingCount는 0이며 같은 batch에 transfers 생성이 없어야 한다(settledAt 함께 기록). 비방장, 송금 건수가 있는 정산(transfers 생성이 포함된 batch), pendingCount가 0이 아닌 경우의 직행은 거절한다. 송금이 있는 정산은 open→settling만 허용한다.
 - 송금 금액, fromUid, toUid는 생성 후 수정 불가(affectedKeys로 제한).
 - settled 이벤트는 전체 읽기 전용이다.
 - 송금 확인에 따른 events 갱신(방장 아님)은 다음을 모두 만족할 때만 허용한다: 변경 필드가 pendingCount, status, settledAt, lastConfirmedTransferId뿐이다. 이전 status가 settling이다. pendingCount가 정확히 1 줄었다. 줄인 결과가 0이면 status가 settled이고 아니면 settling이다. lastConfirmedTransferId가 가리키는 transfer가 같은 batch에서 sent에서 confirmed로 바뀌고 그 toUid가 요청자다(get과 getAfter 사용).
@@ -81,8 +83,8 @@ shares는 균등분할이어도 계산 결과를 저장한다. 저장 시 shares
 Strategy, State, Command, Composite, Repository, Factory는 구조가 분명해서 안전하다. Singleton, Adapter, Observer, Facade는 위 인정 조건을 지켜야 8종으로 센다.
 
 ## 7. 테스트
-- Vitest(src/domain): 테스트 예시 1과 2, 나머지 배분, 합계 불일치 거부, 횟수 줄이기 결과, 취소 지출 제외, 0건 정산, 상태 전이 거부, pendingCount 계산.
-- Rules 에뮬레이터: 비로그인, 비멤버, 멤버, 방장 각각의 허용과 거절. 추가 케이스: 가입하면서 role owner 시도, 송금 금액 변경 시도, 다른 사람 송금 confirmed 시도, transfer 없이 pendingCount 줄이기, settled 이후 쓰기.
+- Vitest(src/domain): 테스트 예시 1과 2, 나머지 배분, 합계 불일치 거부, 지출 금액 1원 미만 거부, 횟수 줄이기 결과, 취소 지출 제외, 0건 정산, 상태 전이 거부, pendingCount 계산.
+- Rules 에뮬레이터: 비로그인, 비멤버, 멤버, 방장 각각의 허용과 거절. 추가 케이스: 가입하면서 role owner 시도, 송금 금액 변경 시도, 다른 사람 송금 confirmed 시도, transfer 없이 pendingCount 줄이기, settled 이후 쓰기, 방장의 0건 정산 직행(open→settled) 허용, 비방장의 직행 거절, 송금 1건 이상인데 open→settled 직행 거절.
 - GitHub Actions: build와 Vitest. 에뮬레이터 테스트는 Java가 필요하므로 로컬 실행 결과를 보고서에 기록해도 된다.
 - 실제 화면 검증: 배포 주소에서 로그인, 데이터 유지, 비멤버 접근 거절을 직접 확인하고 준비 상태, 동작, 예상 결과, 실제 결과를 기록한다.
 

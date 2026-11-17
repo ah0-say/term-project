@@ -100,6 +100,18 @@ describe('validateExpenseShares (지출 저장 전 shares 검사)', () => {
     expect(validateExpenseShares(10000, { A: 5000, B: 4999 }, round).ok).toBe(false)
   })
 
+  it('총액이 1 이상의 정수가 아니면 거부 (0원, 음수, 소수, NaN)', () => {
+    expect(validateExpenseShares(0, {}, round).ok).toBe(false)
+    expect(validateExpenseShares(0, { A: 0 }, round).ok).toBe(false)
+    expect(validateExpenseShares(-100, { A: -100 }, round).ok).toBe(false)
+    expect(validateExpenseShares(100.5, { A: 100.5 }, round).ok).toBe(false)
+    expect(validateExpenseShares(NaN, { A: 1 }, round).ok).toBe(false)
+  })
+
+  it('총액 1원은 통과', () => {
+    expect(validateExpenseShares(1, { A: 1 }, round)).toEqual({ ok: true })
+  })
+
   it('소수나 음수 분담액은 거부', () => {
     expect(validateExpenseShares(10000, { A: 5000.5, B: 4999.5 }, round).ok).toBe(false)
     expect(validateExpenseShares(10000, { A: 11000, B: -1000 }, round).ok).toBe(false)

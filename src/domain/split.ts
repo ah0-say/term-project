@@ -67,13 +67,16 @@ export function validateShareKeys(
 
 /**
  * 지출 저장 전 shares 검사. 균등분할과 직접입력 모두에 쓴다.
- * 키가 차수 참여자의 부분집합이고, 분담액 합계가 amount와 같아야 한다.
+ * 총액은 1 이상의 정수, 키는 차수 참여자의 부분집합, 분담액 합계는 amount와 같아야 한다.
  */
 export function validateExpenseShares(
   amount: number,
   shares: Shares,
   participantIds: readonly string[],
 ): SharesValidation {
+  if (!Number.isSafeInteger(amount) || amount < 1) {
+    return { ok: false, reason: '지출 금액은 1원 이상의 정수여야 합니다.' }
+  }
   const keys = validateShareKeys(shares, participantIds)
   if (!keys.ok) return keys
   return validateCustomShares(amount, shares)
