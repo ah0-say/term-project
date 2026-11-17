@@ -3,9 +3,6 @@ import heroImg from './assets/hero.png'
 import reactLogo from './assets/react.svg'
 import viteLogo from './assets/vite.svg'
 import './App.css'
-import { auth } from "./data/firebase";
-
-console.log(auth.app.options.projectId)
 
 function App() {
   const [count, setCount] = useState(0)
