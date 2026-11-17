@@ -51,3 +51,30 @@ export function validateCustomShares(amount: number, shares: Shares): SharesVali
   }
   return { ok: true }
 }
+
+/** shares의 키가 해당 차수 participantIds의 부분집합인지 검사한다. */
+export function validateShareKeys(
+  shares: Shares,
+  participantIds: readonly string[],
+): SharesValidation {
+  const participants = new Set(participantIds)
+  const outsiders = Object.keys(shares).filter((uid) => !participants.has(uid))
+  if (outsiders.length > 0) {
+    return { ok: false, reason: `차수 참여자가 아닌 사람이 분담에 있습니다: ${outsiders.join(', ')}` }
+  }
+  return { ok: true }
+}
+
+/**
+ * 지출 저장 전 shares 검사. 균등분할과 직접입력 모두에 쓴다.
+ * 키가 차수 참여자의 부분집합이고, 분담액 합계가 amount와 같아야 한다.
+ */
+export function validateExpenseShares(
+  amount: number,
+  shares: Shares,
+  participantIds: readonly string[],
+): SharesValidation {
+  const keys = validateShareKeys(shares, participantIds)
+  if (!keys.ok) return keys
+  return validateCustomShares(amount, shares)
+}
